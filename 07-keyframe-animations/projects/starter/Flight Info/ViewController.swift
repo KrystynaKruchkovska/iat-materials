@@ -30,8 +30,8 @@
 /// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 /// THE SOFTWARE.
 
-import UIKit
 import QuartzCore
+import UIKit
 
 // A delay function
 func delay(seconds: Double, completion: @escaping () -> Void) {
@@ -65,27 +65,27 @@ class ViewController: UIViewController {
   override func viewDidLoad() {
     super.viewDidLoad()
 
-    //adjust ui
+    // adjust ui
     summary.addSubview(summaryIcon)
     summaryIcon.center.y = summary.frame.size.height / 2
 
-    //add the snow effect layer
+    // add the snow effect layer
     let snowClipView = UIView(frame: view.frame.offsetBy(dx: 0, dy: 50))
     snowClipView.clipsToBounds = true
     snowClipView.addSubview(snowView)
     view.addSubview(snowClipView)
 
-    //start rotating the flights
-    changeFlight(to: londonToParis)
+    // start rotating the flights
+    changeFlight(to: londonToParis, animated: true)
   }
 
   // MARK: custom methods
 
   func changeFlight(to data: FlightData, animated: Bool = false) {
     // populate the UI with the next flight's data
-    summary.text = data.summary
-
     if animated {
+      planeDepart()
+      summarySwitch(to: data.summary)
       fade(
         imageView: bgImageView,
         toImage: UIImage(named: data.weatherImageName)!,
@@ -109,6 +109,7 @@ class ViewController: UIViewController {
         direction: direction
       )
     } else {
+      summary.text = data.summary
       bgImageView.image = UIImage(named: data.weatherImageName)
       snowView.isHidden = !data.showWeatherEffects
 
@@ -123,6 +124,47 @@ class ViewController: UIViewController {
     delay(seconds: 3.0) {
       self.changeFlight(to: data.isTakingOff ? parisToRome : londonToParis, animated: true)
     }
+  }
+
+  func planeDepart() {
+    let originalCenter = planeImage.center
+
+    UIView.animateKeyframes(
+      withDuration: 1.5,
+      delay: 0.0,
+      animations: {
+        // add keyframes
+        UIView.addKeyframe(
+          withRelativeStartTime: 0.0,
+          relativeDuration: 0.25,
+          animations: {
+            self.planeImage.center.x += 80.0
+            self.planeImage.center.y -= 10.0
+          }
+        )
+
+        UIView.addKeyframe(withRelativeStartTime: 0.1, relativeDuration: 0.4) {
+          self.planeImage.transform = CGAffineTransform(rotationAngle: -.pi / 8)
+        }
+
+        UIView.addKeyframe(withRelativeStartTime: 0.25, relativeDuration: 0.25) {
+          self.planeImage.center.x += 100.0
+          self.planeImage.center.y -= 50.0
+          self.planeImage.alpha = 0.0
+        }
+
+        UIView.addKeyframe(withRelativeStartTime: 0.51, relativeDuration: 0.01) {
+          self.planeImage.transform = .identity
+          self.planeImage.center = CGPoint(x: 0.0, y: originalCenter.y)
+        }
+
+        UIView.addKeyframe(withRelativeStartTime: 0.55, relativeDuration: 0.45) {
+          self.planeImage.alpha = 1.0
+          self.planeImage.center = originalCenter
+        }
+      },
+      completion: nil
+    )
   }
 
   func fade(imageView: UIImageView, toImage: UIImage, showEffects: Bool) {
@@ -181,12 +223,28 @@ class ViewController: UIViewController {
     UIView.animate(withDuration: 0.25, delay: 0.1, options: .curveEaseIn, animations: {
       auxLabel.transform = .identity
       auxLabel.alpha = 1.0
-    }, completion: {_ in
+    }, completion: { _ in
       // clean up
       auxLabel.removeFromSuperview()
       label.text = text
       label.alpha = 1.0
       label.transform = .identity
     })
+  }
+
+  func summarySwitch(to text: String) {
+    let originalCenter = summary.center
+    UIView.animateKeyframes(withDuration: 1, delay: 0) {
+      UIView.addKeyframe(withRelativeStartTime: 0.1, relativeDuration: 0.45) {
+        self.summary.center.y -= 100.0
+      }
+
+      UIView.addKeyframe(withRelativeStartTime: 0.5, relativeDuration: 0.45) {
+        self.summary.center.y = originalCenter.y
+      }
+    }
+    delay(seconds: 0.5) {
+      self.summary.text = text
+    }
   }
 }
