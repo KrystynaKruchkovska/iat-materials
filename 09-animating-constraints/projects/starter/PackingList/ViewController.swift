@@ -38,6 +38,7 @@ class ViewController: UIViewController {
   @IBOutlet var tableView: UITableView!
   @IBOutlet var buttonMenu: UIButton!
   @IBOutlet var titleLabel: UILabel!
+  @IBOutlet var menuHeightConstraint: NSLayoutConstraint!
 
   // MARK: further class variables
 
@@ -47,10 +48,53 @@ class ViewController: UIViewController {
 
   // MARK: class methods
 
-  @IBAction func actionToggleMenu(_ sender: AnyObject) {
+  @IBAction func actionToggleMenu(_: AnyObject) {
     guard
       let titleLabel = titleLabel,
       let titleSuperview = titleLabel.superview else { return }
+    isMenuOpen = !isMenuOpen
+    
+    titleLabel.superview?.constraints.forEach { constraint in
+      
+      if constraint.firstItem === titleLabel &&
+         constraint.firstAttribute == .centerX {
+        constraint.constant = isMenuOpen ? -100.0 : 0.0
+        print(" -> \(constraint.description)\n")
+        return
+      }
+      
+      if constraint.identifier == "TitleCenterY" {
+        constraint.isActive = false
+        //add new constraint
+        let newConstraint = NSLayoutConstraint(
+          item: titleLabel,
+          attribute: .centerY,
+          relatedBy: .equal,
+          toItem: titleLabel.superview!,
+          attribute: .centerY,
+          multiplier: isMenuOpen ? 0.67 : 1.0,
+          constant: 0)
+        newConstraint.identifier = "TitleCenterY"
+        newConstraint.isActive = true
+        return
+      }
+    }
+    
+    menuHeightConstraint.constant = isMenuOpen ? 184.0 : 44.0
+    titleLabel.text = isMenuOpen ? "Select Item" : "Packing List"
+    UIView.animate(
+      withDuration: 1.0,
+      delay: 0.0,
+      usingSpringWithDamping: 0.4,
+      initialSpringVelocity: 10.0,
+      options: .curveEaseIn,
+      animations: {
+        self.view.layoutIfNeeded()
+        let angle: CGFloat = self.isMenuOpen ? .pi / 4 : 0.0
+        self.buttonMenu.transform = CGAffineTransform(rotationAngle: angle)
+      },
+      completion: nil
+    )
   }
 
   func showItem(_ index: Int) {
@@ -75,11 +119,11 @@ extension ViewController: UITableViewDelegate, UITableViewDataSource {
 
   // MARK: Table View methods
 
-  func numberOfSections(in tableView: UITableView) -> Int {
+  func numberOfSections(in _: UITableView) -> Int {
     return 1
   }
 
-  func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+  func tableView(_: UITableView, numberOfRowsInSection _: Int) -> Int {
     return items.count
   }
 

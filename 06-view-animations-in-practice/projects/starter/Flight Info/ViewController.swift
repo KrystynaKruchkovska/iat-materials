@@ -115,4 +115,26 @@ class ViewController: UIViewController {
                    completion: nil
     )
   }
+  
+  func cubeTransition(label: UILabel, text: String, direction: AnimationDirection) {
+    let auxLabel = UILabel(frame: label.frame)
+    auxLabel.text = text
+    auxLabel.font = label.font
+    auxLabel.textAlignment = label.textAlignment
+    auxLabel.textColor = label.textColor
+    auxLabel.backgroundColor = label.backgroundColor
+    
+    let auxLabelOffset = CGFloat(direction.rawValue) *
+      label.frame.size.height/2.0
+
+    auxLabel.transform =
+      CGAffineTransform(translationX: 0.0, y: auxLabelOffset)
+      .scaledBy(x: 1.0, y: 0.1)
+    
+  }
+}
+
+enum AnimationDirection: Int {
+  case positive = 1
+  case negative = -1
 }
