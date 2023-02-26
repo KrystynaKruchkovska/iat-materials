@@ -55,6 +55,7 @@ class ViewController: UIViewController {
   let spinner = UIActivityIndicatorView(style: .large)
   let status = UIImageView(image: UIImage(named: "banner"))
   let label = UILabel()
+  let info = UILabel()
   let messages = ["Connecting ...", "Authorizing ...", "Sending credentials ...", "Failed"]
 
   var statusPosition = CGPoint.zero
@@ -63,6 +64,8 @@ class ViewController: UIViewController {
 
   override func viewDidLoad() {
     super.viewDidLoad()
+    username.delegate = self
+    password.delegate = self
 
     // set up the UI
     loginButton.layer.cornerRadius = 8.0
@@ -83,6 +86,14 @@ class ViewController: UIViewController {
     label.textAlignment = .center
     status.addSubview(label)
     statusPosition = status.center
+
+    info.frame = CGRect(x: 0.0, y: loginButton.center.y - 60.0, width: view.frame.size.width, height: 30)
+    info.backgroundColor = .clear
+    info.font = UIFont(name: "HelveticaNeue", size: 12.0)
+    info.textAlignment = .center
+    info.textColor = .white
+    info.text = "Tap on a field and enter username and password"
+    view.insertSubview(info, belowSubview: loginButton)
   }
 
   override func viewWillAppear(_ animated: Bool) {
@@ -92,24 +103,25 @@ class ViewController: UIViewController {
     flyRight.toValue = view.bounds.size.width / 2
     flyRight.duration = 0.5
     flyRight.fillMode = .both
+    flyRight.delegate = self
+    flyRight.setValue("form", forKey: "name")
 
+    flyRight.setValue(heading.layer, forKey: "layer")
     heading.layer.add(flyRight, forKey: nil)
 
     flyRight.beginTime = CACurrentMediaTime() + 0.3
+    flyRight.setValue(username.layer, forKey: "layer")
     username.layer.add(flyRight, forKey: nil)
     username.layer.position.x = view.bounds.size.width / 2
 
     flyRight.beginTime = CACurrentMediaTime() + 0.4
+    flyRight.setValue(password.layer, forKey: "layer")
     password.layer.add(flyRight, forKey: nil)
     password.layer.position.x = view.bounds.size.width / 2
 
     loginButton.center.y += 30
     loginButton.alpha = 0
 
-//    cloud1.alpha = 0.0
-//    cloud2.alpha = 0.0
-//    cloud3.alpha = 0.0
-//    cloud4.alpha = 0.0
     let cloudOpacity = CABasicAnimation(keyPath: "opacity")
     cloudOpacity.fromValue = 0
     cloudOpacity.toValue = 1
@@ -137,16 +149,29 @@ class ViewController: UIViewController {
       self.loginButton.alpha = 1
     }
 
-    animateCloud(cloud: cloud1)
-    animateCloud(cloud: cloud2)
-    animateCloud(cloud: cloud3)
-    animateCloud(cloud: cloud4)
+    animateCloud(layer: cloud1.layer)
+    animateCloud(layer: cloud2.layer)
+    animateCloud(layer: cloud3.layer)
+    animateCloud(layer: cloud4.layer)
+
+    let flyLeft = CABasicAnimation(keyPath: "position.x")
+    flyLeft.fromValue = info.layer.position.x +
+      view.frame.size.width
+    flyLeft.toValue = info.layer.position.x
+    flyLeft.duration = 5.0
+    info.layer.add(flyLeft, forKey: "infoAppear")
+
+    let fadeLabelIn = CABasicAnimation(keyPath: "opacity")
+    fadeLabelIn.fromValue = 0.2
+    fadeLabelIn.toValue = 1.0
+    fadeLabelIn.duration = 4.5
+    info.layer.add(fadeLabelIn, forKey: "fadein")
   }
 
   // MARK: further methods
 
   func tintBackgroundColor(layer: CALayer, toColor: UIColor) {
-    let animateBackground = CABasicAnimation(keyPath: "background")
+    let animateBackground = CABasicAnimation(keyPath: "backgroundColor")
     animateBackground.fromValue = layer.backgroundColor
     animateBackground.toValue = toColor.cgColor
     animateBackground.duration = 1
@@ -245,12 +270,11 @@ class ViewController: UIViewController {
         self.spinner.alpha = 0
         self.loginButton.bounds.size.width -= 80.0
         self.loginButton.center.y -= 60.0
-      }  completion: { _ in
+      } completion: { _ in
         let tintColor = UIColor(red: 0.63, green: 0.84, blue: 0.35, alpha: 1.0)
         self.tintBackgroundColor(layer: self.loginButton.layer, toColor: tintColor)
         self.roundCorners(layer: self.loginButton.layer, toRadius: 10.0)
       }
-      
     }
   }
 
@@ -265,21 +289,86 @@ class ViewController: UIViewController {
       self.animateCloud(cloud: cloud)
     }
   }
-  
-  func roundCorners(layer: CALayer, toRadius: CGFloat){
+
+  func animateCloud(layer: CALayer) {
+    // 1
+    let cloudSpeed = 60.0 / Double(view.layer.frame.size.width)
+    let duration: TimeInterval = Double(
+      view.layer.frame.size.width - layer.frame.origin.x
+    )
+      * cloudSpeed
+
+    // 2
+    let cloudMove = CABasicAnimation(keyPath: "position.x")
+    cloudMove.duration = duration
+    cloudMove.toValue = self.view.bounds.width +
+      layer.bounds.width / 2
+    cloudMove.delegate = self
+    cloudMove.setValue("cloud", forKey: "name")
+    cloudMove.setValue(layer, forKey: "layer")
+    layer.add(cloudMove, forKey: nil)
+  }
+
+  func roundCorners(layer: CALayer, toRadius: CGFloat) {
     let roundCorners = CABasicAnimation(keyPath: "roundCorners")
     roundCorners.fromValue = layer.cornerRadius
     roundCorners.toValue = toRadius
     roundCorners.duration = 0.33
-    
+
     layer.add(roundCorners, forKey: nil)
     layer.cornerRadius = toRadius
   }
+
   // MARK: UITextFieldDelegate
 
   func textFieldShouldReturn(_ textField: UITextField) -> Bool {
     let nextField = (textField === username) ? password : username
     nextField?.becomeFirstResponder()
     return true
+  }
+}
+
+extension ViewController: CAAnimationDelegate {
+  func animationDidStop(
+    _ anim: CAAnimation,
+    finished _: Bool
+  ) {
+    guard let name = anim.value(forKey: "name") as? String else {
+      return
+    }
+
+    if name == "form" {
+      let layer = anim.value(forKey: "layer") as? CALayer
+      anim.setValue(nil, forKey: "layer")
+
+      let pulse = CABasicAnimation(keyPath: "transform.scale")
+      pulse.fromValue = 1.25
+      pulse.toValue = 1.0
+      pulse.duration = 0.25
+      layer?.add(pulse, forKey: nil)
+    }
+
+    if name == "cloud" {
+      guard let layer = anim.value(forKey: "layer") as? CALayer else {
+        return
+      }
+      anim.setValue(nil, forKey: "layer")
+
+      layer.position.x = -layer.bounds.width / 2
+
+      delay(0.5) {
+        self.animateCloud(layer: layer)
+      }
+    }
+  }
+}
+
+extension ViewController: UITextFieldDelegate {
+  func textFieldDidBeginEditing(_: UITextField) {
+    guard let runningAnimations = info.layer.animationKeys() else {
+      return
+    }
+    info.layer.removeAnimation(forKey: "infoAppear")
+    print(runningAnimations)
   }
 }
