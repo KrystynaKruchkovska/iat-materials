@@ -98,26 +98,31 @@ class ViewController: UIViewController {
 
   override func viewWillAppear(_ animated: Bool) {
     super.viewWillAppear(animated)
+
+    let formGroup = CAAnimationGroup()
+    formGroup.duration = 0.5
+    formGroup.fillMode = .backwards
+
     let flyRight = CABasicAnimation(keyPath: "position.x")
     flyRight.fromValue = -view.bounds.size.width / 2
     flyRight.toValue = view.bounds.size.width / 2
-    flyRight.duration = 0.5
-    flyRight.fillMode = .both
-    flyRight.delegate = self
-    flyRight.setValue("form", forKey: "name")
 
-    flyRight.setValue(heading.layer, forKey: "layer")
-    heading.layer.add(flyRight, forKey: nil)
+    let fadeFieldIn = CABasicAnimation(keyPath: "opacity")
+    fadeFieldIn.fromValue = 0.25
+    fadeFieldIn.toValue = 1.0
 
-    flyRight.beginTime = CACurrentMediaTime() + 0.3
-    flyRight.setValue(username.layer, forKey: "layer")
-    username.layer.add(flyRight, forKey: nil)
-    username.layer.position.x = view.bounds.size.width / 2
+    formGroup.animations = [flyRight, fadeFieldIn]
+    heading.layer.add(formGroup, forKey: nil)
 
-    flyRight.beginTime = CACurrentMediaTime() + 0.4
-    flyRight.setValue(password.layer, forKey: "layer")
-    password.layer.add(flyRight, forKey: nil)
-    password.layer.position.x = view.bounds.size.width / 2
+    formGroup.delegate = self
+    formGroup.setValue("form", forKey: "name")
+    formGroup.setValue(username.layer, forKey: "layer")
+    formGroup.beginTime = CACurrentMediaTime() + 0.3
+    username.layer.add(formGroup, forKey: nil)
+
+    formGroup.setValue(password.layer, forKey: "layer")
+    formGroup.beginTime = CACurrentMediaTime() + 0.4
+    password.layer.add(formGroup, forKey: nil)
 
     let cloudOpacity = CABasicAnimation(keyPath: "opacity")
     cloudOpacity.fromValue = 0
@@ -146,23 +151,24 @@ class ViewController: UIViewController {
     groupAnimation.duration = 0.5
     groupAnimation.fillMode = .backwards
     groupAnimation.timingFunction = CAMediaTimingFunction(
-    name: .easeIn)
-    
+      name: .easeIn
+    )
+
     let scaleDown = CABasicAnimation(keyPath: "transform.scale")
     scaleDown.fromValue = 3.5
     scaleDown.toValue = 1.0
-    
+
     let rotate = CABasicAnimation(keyPath: "transform.rotation")
     rotate.fromValue = .pi / 4.0
     rotate.toValue = 0.0
-    
+
     let fade = CABasicAnimation(keyPath: "opacity")
     fade.fromValue = 0.0
     fade.toValue = 1.0
-    
+
     groupAnimation.animations = [scaleDown, rotate, fade]
     loginButton.layer.add(groupAnimation, forKey: nil)
-    
+
     animateCloud(layer: cloud1.layer)
     animateCloud(layer: cloud2.layer)
     animateCloud(layer: cloud3.layer)
@@ -177,7 +183,7 @@ class ViewController: UIViewController {
     flyLeft.autoreverses = true
     info.layer.speed = 2.0
     info.layer.add(flyLeft, forKey: "infoAppear")
-    
+
     let fadeLabelIn = CABasicAnimation(keyPath: "opacity")
     fadeLabelIn.fromValue = 0.2
     fadeLabelIn.toValue = 1.0
