@@ -30,8 +30,8 @@
 /// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 /// THE SOFTWARE.
 
-import UIKit
 import QuartzCore
+import UIKit
 
 @IBDesignable
 class AvatarView: UIView {
@@ -65,9 +65,13 @@ class AvatarView: UIView {
   }
 
   var shouldTransitionToFinishedState = false
+  var isSquare = false
 
   override func didMoveToWindow() {
     layer.addSublayer(photoLayer)
+    photoLayer.mask = maskLayer
+    layer.addSublayer(circleLayer)
+    addSubview(label)
   }
 
   override func layoutSubviews() {
@@ -82,7 +86,8 @@ class AvatarView: UIView {
       x: (bounds.size.width - image.size.width + lineWidth) / 2,
       y: (bounds.size.height - image.size.height - lineWidth) / 2,
       width: image.size.width,
-      height: image.size.height)
+      height: image.size.height
+    )
 
     // Draw the circle
     circleLayer.path = UIBezierPath(ovalIn: bounds).cgPath
@@ -96,5 +101,87 @@ class AvatarView: UIView {
 
     // Size the label
     label.frame = CGRect(x: 0.0, y: bounds.size.height + 10.0, width: bounds.size.width, height: 24.0)
+  }
+
+  func bounceOff(point: CGPoint, morphSize: CGSize) {
+    let originalCenter = center
+
+    UIView.animate(
+      withDuration: animationDuration,
+      delay: 0.0,
+      usingSpringWithDamping: 0.8,
+      initialSpringVelocity: 0.0,
+      animations: {
+        self.center = point
+      },
+      completion: { _ in
+        // complete bounce to
+        if self.shouldTransitionToFinishedState {
+          self.animateToSquare()
+        }
+      }
+    )
+
+    UIView.animate(
+      withDuration: self.animationDuration,
+      delay: self.animationDuration,
+      usingSpringWithDamping: 0.7,
+      initialSpringVelocity: 1.0,
+      animations: {
+        self.center = originalCenter
+      },
+      completion: { _ in
+        delay(seconds: 0.1) {
+          if !self.isSquare {
+            self.bounceOff(point: point, morphSize: morphSize)
+          }
+        }
+      }
+    )
+
+    let morphedFrame = (originalCenter.x > point.x) ?
+
+      CGRect(
+        x: 0.0,
+        y: bounds.height - morphSize.height,
+        width: morphSize.width,
+        height: morphSize.height
+      ) :
+
+      CGRect(
+        x: bounds.width - morphSize.width,
+        y: bounds.height - morphSize.height,
+        width: morphSize.width,
+        height: morphSize.height
+      )
+
+    let morphAnimation = CABasicAnimation(keyPath: "path")
+    morphAnimation.duration = animationDuration
+    morphAnimation.toValue = UIBezierPath(
+      ovalIn:
+      morphedFrame
+    ).cgPath
+
+    morphAnimation.timingFunction = CAMediaTimingFunction(
+      name: .easeOut
+    )
+    circleLayer.add(morphAnimation, forKey: nil)
+    maskLayer.add(morphAnimation, forKey: nil)
+  }
+
+  func animateToSquare() {
+    isSquare = true
+    let squarePath = UIBezierPath(rect: bounds).cgPath
+
+    let pathAnimation = CABasicAnimation(keyPath: "path")
+    pathAnimation.duration = 0.25
+    pathAnimation.fromValue = circleLayer.path
+    pathAnimation.toValue = squarePath
+
+    circleLayer.add(pathAnimation, forKey: nil)
+    circleLayer.path = squarePath
+
+    maskLayer.add(pathAnimation, forKey: nil)
+    maskLayer.path = squarePath
   }
 }
